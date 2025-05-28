@@ -10,6 +10,14 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
 - Integration with OKX DEX for token swaps
 - Outcome verification using Perplexity AI
 
+## Perplexity API Usage
+
+WagerX uses the Perplexity API (Sonar model) for two core features:
+- **Wager Detection:** When a user sends a message, the bot sends it to Perplexity with a system prompt asking for a structured JSON response indicating if the message is a wager, and extracting the description, amount, asset, and participants.
+- **Outcome Verification:** After the wager deadline, the bot sends the wager description and proposed outcome to Perplexity, which returns a confidence score and explanation for whether the outcome matches the wager conditions.
+
+This allows WagerX to automate both the creation and resolution of wagers using natural language, making the experience seamless and user-friendly.
+
 ## Setup Instructions
 
 1. Clone the repository
@@ -23,6 +31,14 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
    # Telegram Bot Token
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
+   # Perplexity API
+   PERPLEXITY_API_KEY=your_perplexity_api_key
+
+   # OKX DEX API
+   OKX_API_KEY=your_okx_api_key
+   OKX_SECRET_KEY=your_okx_secret_key
+   OKX_PASSPHRASE=your_okx_passphrase
+
    # Solana RPC URL (using devnet for development)
    SOLANA_RPC_URL=https://api.devnet.solana.com
 
@@ -34,10 +50,7 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
    FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
    FIREBASE_APP_ID=your_firebase_app_id
 
-   # OKX DEX API
-   OKX_API_KEY=your_okx_api_key
-   OKX_SECRET_KEY=your_okx_secret_key
-   OKX_PASSPHRASE=your_okx_passphrase
+
    ```
 
 4. Run the development server:
@@ -50,6 +63,19 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
    - Get the bot token and add it to your `.env.local` file
    - Set up the webhook URL to point to your deployment URL
 
+6. **Local Development with ngrok:**
+   - Install ngrok: https://ngrok.com/download
+   - Start your dev server (`npm run dev`)
+   - In a new terminal, run:
+     ```bash
+     ngrok http 3000
+     ```
+   - Copy the HTTPS forwarding URL from ngrok and set it as your Telegram webhook:
+     ```
+     https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<NGROK_HTTPS_URL>/api/bot
+     ```
+   - Now Telegram can reach your local server for development and testing.
+
 ## Development
 
 The project is built with:
@@ -59,6 +85,7 @@ The project is built with:
 - Firebase
 - Telegram Bot API
 - OKX DEX API
+- Perplexity API
 
 ## Project Structure
 
