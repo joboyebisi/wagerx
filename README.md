@@ -9,6 +9,8 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
 - Secure fund collection and distribution
 - Integration with OKX DEX for token swaps
 - Outcome verification using Perplexity AI
+- AI-powered deadline detection for wagers
+- Interactive bot commands for wager management
 
 ## Key Integrations
 
@@ -100,31 +102,3 @@ The project is built with:
 - Perplexity API
 
 ## Project Structure
-
-```
-src/
-├── app/
-│   ├── api/
-│   │   └── bot/
-│   │       └── route.ts    # Telegram bot webhook handler
-│   ├── layout.tsx          # Root layout
-│   ├── page.tsx           # Home page
-│   └── globals.css        # Global styles
-├── lib/
-│   ├── solana/            # Solana wallet and transaction utilities
-│   ├── firebase/          # Firebase configuration and utilities
-│   └── telegram/          # Telegram bot utilities
-└── types/                 # TypeScript type definitions
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
-
-## License
-
-MIT 
