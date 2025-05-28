@@ -102,3 +102,39 @@ The project is built with:
 - Perplexity API
 
 ## Project Structure
+
+src/
+├── app/
+│ ├── api/
+│ │ └── bot/
+│ │ └── route.ts # Telegram bot webhook handler
+│ ├── layout.tsx # Root layout
+│ ├── page.tsx # Home page
+│ └── globals.css # Global styles
+├── lib/
+│ ├── solana/ # Solana wallet and transaction utilities
+│ ├── firebase/ # Firebase configuration and utilities
+│ └── telegram/ # Telegram bot utilities
+└── types/ # TypeScript type definitions
+
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+For support or inquiries, reach out to [your contact information].
+
+## Acknowledgments
+
+- Thanks to the Solana, OKX, and Perplexity teams for their support and APIs.
+- Special thanks to all contributors and users of WagerX.
