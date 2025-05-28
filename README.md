@@ -10,6 +10,11 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
 - Integration with OKX DEX for token swaps
 - Outcome verification using Perplexity AI
 
+## Key Integrations
+
+- **OKX DEX API:** Enables automatic, on-chain token swaps (e.g., SOL to USDC) for escrow and payouts, ensuring all participants can use their preferred token and receive USDC regardless of how they funded the wager. The MVP includes a mock for region-restricted environments, so the demo always works.
+- **Perplexity API:** Powers natural language wager detection and outcome verification, allowing users to create and resolve wagers using plain English. The bot uses Perplexity to extract wager details and to verify results based on real-world data.
+
 ## Perplexity API Usage
 
 WagerX uses the Perplexity API (Sonar model) for two core features:
@@ -17,6 +22,13 @@ WagerX uses the Perplexity API (Sonar model) for two core features:
 - **Outcome Verification:** After the wager deadline, the bot sends the wager description and proposed outcome to Perplexity, which returns a confidence score and explanation for whether the outcome matches the wager conditions.
 
 This allows WagerX to automate both the creation and resolution of wagers using natural language, making the experience seamless and user-friendly.
+
+## OKX DEX API Usage
+
+WagerX integrates the OKX DEX API to:
+- **Swap Tokens Automatically:** When users fund a wager with SOL but the payout is in USDC, the bot uses OKX DEX to swap SOL to USDC on-chain.
+- **Automate Payouts:** After a wager is resolved, the bot pays out the winner in USDC, regardless of the original funding token.
+- **Demo-Ready:** If OKX DEX is not accessible due to region restrictions, the bot mocks the swap so the demo flow is never blocked.
 
 ## Setup Instructions
 
@@ -31,13 +43,13 @@ This allows WagerX to automate both the creation and resolution of wagers using 
    # Telegram Bot Token
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 
-   # Perplexity API
-   PERPLEXITY_API_KEY=your_perplexity_api_key
-
-   # OKX DEX API
+    # OKX DEX API
    OKX_API_KEY=your_okx_api_key
    OKX_SECRET_KEY=your_okx_secret_key
    OKX_PASSPHRASE=your_okx_passphrase
+
+   # Perplexity API
+   PERPLEXITY_API_KEY=your_perplexity_api_key
 
    # Solana RPC URL (using devnet for development)
    SOLANA_RPC_URL=https://api.devnet.solana.com
@@ -50,7 +62,7 @@ This allows WagerX to automate both the creation and resolution of wagers using 
    FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
    FIREBASE_APP_ID=your_firebase_app_id
 
-
+  
    ```
 
 4. Run the development server:
