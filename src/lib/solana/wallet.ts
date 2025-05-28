@@ -1,5 +1,6 @@
 import { Keypair, Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token';
+import bs58 from 'bs58';
 
 export class WalletManager {
   private connection: Connection;
@@ -8,21 +9,26 @@ export class WalletManager {
     this.connection = new Connection(rpcUrl, 'confirmed');
   }
 
-  async createWallet(): Promise<{ publicKey: string; privateKey: string }> {
+  async createWallet(): Promise<{ publicKey: string; privateKey: string; airdropSuccess: boolean }> {
     const keypair = Keypair.generate();
-    
+    let airdropSuccess = false;
     // Request airdrop for devnet
     if (this.connection.rpcEndpoint.includes('devnet')) {
-      const airdropSignature = await this.connection.requestAirdrop(
-        keypair.publicKey,
-        LAMPORTS_PER_SOL
-      );
-      await this.connection.confirmTransaction(airdropSignature);
+      try {
+        const airdropSignature = await this.connection.requestAirdrop(
+          keypair.publicKey,
+          LAMPORTS_PER_SOL
+        );
+        await this.connection.confirmTransaction(airdropSignature);
+        airdropSuccess = true;
+      } catch (e) {
+        console.warn('Airdrop failed:', e);
+      }
     }
-
     return {
-      publicKey: keypair.publicKey.toString(),
-      privateKey: Buffer.from(keypair.secretKey).toString('hex'),
+      publicKey: keypair.publicKey.toBase58(),
+      privateKey: bs58.encode(keypair.secretKey),
+      airdropSuccess,
     };
   }
 
@@ -48,4 +54,17 @@ export class WalletManager {
       return 0;
     }
   }
+}
+
+/**
+ * Generate a new Solana wallet and print the public and private key (base58)
+ */
+export function generateNewWallet() {
+  const keypair = Keypair.generate();
+  const publicKey = keypair.publicKey.toBase58();
+  const privateKey = bs58.encode(keypair.secretKey);
+  console.log('New Solana Wallet Generated:');
+  console.log('Public Key:', publicKey);
+  console.log('Private Key:', privateKey);
+  return { publicKey, privateKey };
 } 

@@ -10,6 +10,26 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
 - Integration with OKX DEX for token swaps
 - Outcome verification using Perplexity AI
 
+## Key Integrations
+
+- **OKX DEX API:** Enables automatic, on-chain token swaps (e.g., SOL to USDC) for escrow and payouts, ensuring all participants can use their preferred token and receive USDC regardless of how they funded the wager. The MVP includes a mock for region-restricted environments, so the demo always works.
+- **Perplexity API:** Powers natural language wager detection and outcome verification, allowing users to create and resolve wagers using plain English. The bot uses Perplexity to extract wager details and to verify results based on real-world data.
+
+## Perplexity API Usage
+
+WagerX uses the Perplexity API (Sonar model) for two core features:
+- **Wager Detection:** When a user sends a message, the bot sends it to Perplexity with a system prompt asking for a structured JSON response indicating if the message is a wager, and extracting the description, amount, asset, and participants.
+- **Outcome Verification:** After the wager deadline, the bot sends the wager description and proposed outcome to Perplexity, which returns a confidence score and explanation for whether the outcome matches the wager conditions.
+
+This allows WagerX to automate both the creation and resolution of wagers using natural language, making the experience seamless and user-friendly.
+
+## OKX DEX API Usage
+
+WagerX integrates the OKX DEX API to:
+- **Swap Tokens Automatically:** When users fund a wager with SOL but the payout is in USDC, the bot uses OKX DEX to swap SOL to USDC on-chain.
+- **Automate Payouts:** After a wager is resolved, the bot pays out the winner in USDC, regardless of the original funding token.
+- **Demo-Ready:** If OKX DEX is not accessible due to region restrictions, the bot mocks the swap so the demo flow is never blocked.
+
 ## Setup Instructions
 
 1. Clone the repository
@@ -38,6 +58,9 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
    OKX_API_KEY=your_okx_api_key
    OKX_SECRET_KEY=your_okx_secret_key
    OKX_PASSPHRASE=your_okx_passphrase
+
+   # Perplexity API
+   PERPLEXITY_API_KEY=your_perplexity_api_key
    ```
 
 4. Run the development server:
@@ -50,6 +73,19 @@ WagerX is a Web3 Decentralized Application (DApp) designed to streamline friendl
    - Get the bot token and add it to your `.env.local` file
    - Set up the webhook URL to point to your deployment URL
 
+6. **Local Development with ngrok:**
+   - Install ngrok: https://ngrok.com/download
+   - Start your dev server (`npm run dev`)
+   - In a new terminal, run:
+     ```bash
+     ngrok http 3000
+     ```
+   - Copy the HTTPS forwarding URL from ngrok and set it as your Telegram webhook:
+     ```
+     https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<NGROK_HTTPS_URL>/api/bot
+     ```
+   - Now Telegram can reach your local server for development and testing.
+
 ## Development
 
 The project is built with:
@@ -59,6 +95,7 @@ The project is built with:
 - Firebase
 - Telegram Bot API
 - OKX DEX API
+- Perplexity API
 
 ## Project Structure
 

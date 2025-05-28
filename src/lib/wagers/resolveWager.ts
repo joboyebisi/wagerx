@@ -24,7 +24,13 @@ export async function resolveWager(wagerId: string, winnerWalletAddress: string,
 
   // 4. Determine USDC amount to pay out (example: use swapResult.details.toToken.amount)
   // For devnet, assume 6 decimals for USDC
-  const usdcAmount = Number(swapResult.details?.toToken.amount || 0);
+  let usdcAmount = 0;
+  if ('details' in swapResult && swapResult.details?.toToken?.amount) {
+    usdcAmount = Number(swapResult.details.toToken.amount);
+  } else if ('mock' in swapResult && swapResult.swappedLamports) {
+    // For mock, just convert lamports to USDC 1:1 for demo (or set a fixed value)
+    usdcAmount = Number(swapResult.swappedLamports) / 1_000_000; // 1 USDC = 1,000,000 (for demo)
+  }
 
   // 5. Pay out USDC to winner
   const payoutSignature = await payoutUSDC(winnerWalletAddress, usdcAmount);

@@ -134,6 +134,7 @@ export class PerplexityClient {
     botMentioned?: boolean;
   } {
     try {
+      console.log('Perplexity API raw result:', result);
       const parsed = JSON.parse(result);
       return {
         isWager: parsed.isWager || false,
@@ -144,7 +145,8 @@ export class PerplexityClient {
         botMentioned: parsed.botMentioned
       };
     } catch (error) {
-      console.error('Error parsing wager detection result:', error);
+      console.error('Error parsing wager detection result. Raw result was:', result);
+      console.error('Parsing error:', error);
       return { isWager: false };
     }
   }
@@ -168,6 +170,42 @@ export class PerplexityClient {
         confidence: 0,
         explanation: 'Error parsing verification result'
       };
+    }
+  }
+
+  /**
+   * Determines if a wager is time-bound and returns the check time if possible.
+   * Returns { isTimeBound, checkTime, manual, explanation }
+   */
+  async getWagerCheckTime(description: string): Promise<{ isTimeBound: boolean, checkTime?: string, manual: boolean, explanation: string }> {
+    const systemPrompt = `You are a wager time extraction system. Given a wager description, determine if the event is time-bound and can be independently verified (e.g., weather, sports, public events). If so, return the UTC time when the outcome should be checked. If not, set \"manual\" to true.\n\nRespond as JSON:\n{\n  \"isTimeBound\": true/false,\n  \"checkTime\": \"<ISO8601_UTC_time or null>\",\n  \"manual\": true/false,\n  \"explanation\": \"<reasoning>\"\n}`;
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/chat/completions`,
+        {
+          model: 'sonar-pro',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: description }
+          ],
+          max_tokens: 512,
+          temperature: 0.2,
+          top_p: 0.9,
+          stream: false
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      const result = response.data.choices[0].message.content;
+      console.log('Perplexity getWagerCheckTime raw result:', result);
+      return JSON.parse(result);
+    } catch (error) {
+      console.error('Error getting wager check time from Perplexity:', error);
+      return { isTimeBound: false, checkTime: undefined, manual: true, explanation: 'Error or not time-bound.' };
     }
   }
 } 

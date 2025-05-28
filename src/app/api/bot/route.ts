@@ -43,6 +43,9 @@ export async function POST(req: Request) {
       } else if (text.startsWith('/check_escrow')) {
         const args = text.split(' ').slice(1);
         await wagerBot.handleCheckEscrow(chatId, userId, args);
+      } else if (text.startsWith('/swap_to_usdc')) {
+        const args = text.split(' ').slice(1);
+        await wagerBot.handleSwapToUSDC(chatId, userId, args);
       } else {
         // Handle natural language messages
         await wagerBot.handleMessage(chatId, userId, text, isGroup);

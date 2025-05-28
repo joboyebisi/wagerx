@@ -36,3 +36,39 @@ export const client = new OKXDexClient({
         maxRetries: 3
     }
 });
+
+// Devnet addresses
+const SOL_DEVNET_ADDRESS = 'So11111111111111111111111111111111111111112';
+const USDC_DEVNET_ADDRESS = 'BXXkv6zrcK6rP6JrWcGLA7eGBhD5m6BzZr8b8PZQbWvb';
+
+/**
+ * Fetch the latest SOL/USDC price from OKX DEX API (devnet)
+ * Returns the price of 1 SOL in USDC
+ */
+export async function fetchSolToUsdcPriceOKX() {
+  const url = 'https://web3.okx.com/api/v5/dex/market/price';
+  const body = [
+    {
+      chainIndex: '66', // Solana
+      tokenContractAddress: SOL_DEVNET_ADDRESS
+    }
+  ];
+  const headers = {
+    'Content-Type': 'application/json',
+    'OK-ACCESS-KEY': process.env.OKX_API_KEY!,
+    'OK-ACCESS-SIGN': '', // If required, add signature logic
+    'OK-ACCESS-PASSPHRASE': process.env.OKX_API_PASSPHRASE!,
+    'OK-ACCESS-TIMESTAMP': new Date().toISOString()
+  };
+  // For MVP, skip signature if not required by endpoint
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data && data.data && data.data[0] && data.data[0].price) {
+    return parseFloat(data.data[0].price);
+  }
+  throw new Error('Failed to fetch SOL/USDC price from OKX');
+}
