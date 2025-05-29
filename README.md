@@ -94,7 +94,6 @@ WagerX integrates the OKX DEX API to:
    PERPLEXITY_API_KEY=your_perplexity_api_key
 =======
   
->>>>>>> f33791fe56ee8d78be337cd1c89657c35c5bbc82
    ```
 
 4. Run the development server:
