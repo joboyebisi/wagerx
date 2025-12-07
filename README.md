@@ -1,4 +1,4 @@
-# WagerSidus - Telegram Wager Bot
+# WagerX - Telegram Wager Bot
 
 A Telegram Mini App that enables friends to wager on **Sports** and **Crypto** predictions using natural language, powered by Sidus AI, DeepSeek, Membase, and BNB Chain.
 
