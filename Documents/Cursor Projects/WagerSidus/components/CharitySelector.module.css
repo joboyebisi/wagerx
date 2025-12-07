@@ -1,0 +1,170 @@
+.charitySelector {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px solid #e9ecef;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.charityOptions {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.percentageInput label,
+.addressInput label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.percentageSlider {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #ddd;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #0088cc;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #0088cc;
+  cursor: pointer;
+  border: none;
+}
+
+.percentageValue {
+  min-width: 50px;
+  text-align: center;
+  font-weight: 600;
+  color: #0088cc;
+  font-size: 18px;
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.addressSelector {
+  display: flex;
+  gap: 10px;
+}
+
+.addressField {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: monospace;
+}
+
+.addressField:focus {
+  border-color: #0088cc;
+  outline: none;
+}
+
+.selectButton {
+  padding: 12px 20px;
+  background: #0088cc;
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.selectButton:hover {
+  background: #006699;
+}
+
+.charityList {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+}
+
+.charityItem {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.charityItem:hover {
+  background: #f8f9fa;
+}
+
+.charityItem:last-child {
+  border-bottom: none;
+}
+
+.charityName {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.charityDescription {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.charityAddress {
+  font-size: 11px;
+  color: #999;
+  font-family: monospace;
+}
+
+.addressHint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #28a745;
+  font-weight: 500;
+}
+

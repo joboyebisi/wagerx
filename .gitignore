@@ -1,0 +1,85 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+/web/.next/
+/web/out/
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env*.local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+
+# Secret files (Circle entity secrets)
+*entity-secret*.json
+*secret*.json
+rotate-entity-secret.json
+new-entity-secret*.json
+# Weirdly named file
+on new-entity-secret-ciphertext.json rotate-entity-secret.json
+
+# Lock files (use package-lock.json only)
+yarn.lock
+
+# Railway/Nixpacks config (not needed)
+.nixpacks.toml
+
+# Development scripts (keep locally, not in repo)
+*.ps1
+*.sh
+
+# Environment variable files and configs (sensitive)
+*.txt
+railway.json
+
+# Development scripts folder
+scripts/
+
+# Circle recovery folder
+circle-recovery/
+
+# Documentation files (keep local only, not in repo)
+# Keep README.md, ignore all other .md files
+*.md
+!README.md
+
