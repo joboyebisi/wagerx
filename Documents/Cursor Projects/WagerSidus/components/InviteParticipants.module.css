@@ -1,0 +1,87 @@
+.inviteContainer {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid var(--border-color);
+}
+
+.inviteLinkSection,
+.addParticipantSection {
+  margin-bottom: 20px;
+}
+
+.inviteLinkSection label,
+.addParticipantSection label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.linkInputGroup,
+.inputGroup {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.linkInput,
+.participantInput {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.linkInput:focus,
+.participantInput:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(120, 196, 182, 0.1);
+}
+
+.copyButton,
+.addButton {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.copyButton:hover:not(:disabled),
+.addButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(120, 196, 182, 0.3);
+}
+
+.copyButton:disabled,
+.addButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.helpText {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.currentParticipants {
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.currentParticipants label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+

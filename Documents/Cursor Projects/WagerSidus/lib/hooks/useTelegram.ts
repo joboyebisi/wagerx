@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import WebApp from '@twa-dev/sdk';
+// Dynamic import to avoid SSR issues - only import on client side
+let WebApp: any = null;
 
 export interface TelegramUser {
   id: number;
@@ -29,7 +30,21 @@ export function useTelegram() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      setIsReady(true);
+      return;
+    }
+
+    // Dynamically import Telegram SDK only on client side
+    if (!WebApp) {
+      try {
+        WebApp = require('@twa-dev/sdk').default;
+      } catch (error) {
+        console.warn('Telegram SDK not available:', error);
+        setIsReady(true);
+        return;
+      }
+    }
 
     const tg = window.Telegram?.WebApp;
     if (!tg) {
@@ -38,9 +53,11 @@ export function useTelegram() {
       return;
     }
 
-    // Initialize Telegram WebApp
-    WebApp.ready();
-    WebApp.expand();
+    // Initialize Telegram WebApp (only if available)
+    if (WebApp) {
+      WebApp.ready();
+      WebApp.expand();
+    }
 
     // Get user info
     const initData = tg.initDataUnsafe;
@@ -113,7 +130,21 @@ export function useTelegram() {
 
   const showAlert = (message: string) => {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      window.Telegram.WebApp.showAlert(message);
+      const tg = window.Telegram.WebApp;
+      // Try showAlert first (older versions), fallback to showPopup or browser alert
+      if (typeof tg.showAlert === 'function') {
+        tg.showAlert(message);
+      } else if (typeof tg.showPopup === 'function') {
+        // Use showPopup if showAlert is not available
+        tg.showPopup({
+          title: 'Notification',
+          message: message,
+          buttons: [{ type: 'ok' }],
+        });
+      } else {
+        // Fallback to browser alert
+        alert(message);
+      }
     } else {
       alert(message);
     }
@@ -122,9 +153,27 @@ export function useTelegram() {
   const showConfirm = (message: string): Promise<boolean> => {
     return new Promise((resolve) => {
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        window.Telegram.WebApp.showConfirm(message, (confirmed) => {
-          resolve(confirmed);
-        });
+        const tg = window.Telegram.WebApp;
+        // Try showConfirm first, fallback to showPopup or browser confirm
+        if (typeof tg.showConfirm === 'function') {
+          tg.showConfirm(message, (confirmed: boolean) => {
+            resolve(confirmed);
+          });
+        } else if (typeof tg.showPopup === 'function') {
+          // Use showPopup for confirmation
+          tg.showPopup({
+            title: 'Confirm',
+            message: message,
+            buttons: [
+              { type: 'ok', id: 'confirm' },
+              { type: 'cancel', id: 'cancel' },
+            ],
+          }, (buttonId: string) => {
+            resolve(buttonId === 'confirm');
+          });
+        } else {
+          resolve(confirm(message));
+        }
       } else {
         resolve(confirm(message));
       }

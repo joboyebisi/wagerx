@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { WagerContract } from './sidusAI';
+import { perplexityService } from './perplexity';
 
 export type WagerCategory = 'sports' | 'crypto';
 
@@ -28,11 +29,9 @@ export interface VerificationResult {
 
 export class VerificationService {
   private coinmarketcapApiKey: string;
-  private sportsApiKey: string;
 
   constructor() {
     this.coinmarketcapApiKey = process.env.NEXT_PUBLIC_COINMARKETCAP_API_KEY || '';
-    this.sportsApiKey = process.env.NEXT_PUBLIC_SPORTS_API_KEY || '';
   }
 
   async verifyCryptoWager(
@@ -81,29 +80,27 @@ export class VerificationService {
     eventDate: string
   ): Promise<VerificationResult> {
     try {
-      // Use a sports API to get game results
-      // For now, we'll use a placeholder - you can integrate with:
-      // - TheSportsDB API (free tier available)
-      // - ESPN API
-      // - RapidAPI sports endpoints
-      const result = await this.getSportsResult(wager);
+      // Use Perplexity AI for sports verification (real-time search)
+      const perplexityResult = await perplexityService.resolveSportsWager(
+        wager.condition,
+        wager.teams,
+        wager.eventDate,
+        wager.sport
+      );
 
-      if (!result) {
+      if (!perplexityResult.resolved) {
         return {
           verified: false,
           result: null,
-          evidence: 'Unable to fetch sports result from API',
+          evidence: perplexityResult.evidence || 'Unable to verify sports result',
           verifiedAt: new Date().toISOString(),
         };
       }
 
-      // Evaluate condition
-      const conditionResult = this.evaluateSportsCondition(wager.condition, result);
-
       return {
         verified: true,
-        result: conditionResult,
-        evidence: `Sports API: ${JSON.stringify(result)}`,
+        result: perplexityResult.result,
+        evidence: perplexityResult.evidence,
         verifiedAt: new Date().toISOString(),
       };
     } catch (error: any) {
@@ -151,29 +148,7 @@ export class VerificationService {
     }
   }
 
-  private async getSportsResult(wager: SportsWager): Promise<any> {
-    // Placeholder - integrate with actual sports API
-    // Example: TheSportsDB, ESPN, or RapidAPI
-    try {
-      // This is a placeholder - replace with actual API call
-      // const response = await axios.get(`https://api.sports.com/games`, {
-      //   params: {
-      //     teams: wager.teams.join(','),
-      //     date: wager.eventDate,
-      //   },
-      //   headers: {
-      //     'Authorization': `Bearer ${this.sportsApiKey}`,
-      //   },
-      // });
-      // return response.data;
-
-      // For now, return null to indicate API integration needed
-      return null;
-    } catch (error) {
-      console.error('Sports API error:', error);
-      return null;
-    }
-  }
+  // Removed getSportsResult - now using Perplexity AI for sports verification
 
   private evaluateCryptoCondition(
     condition: string,

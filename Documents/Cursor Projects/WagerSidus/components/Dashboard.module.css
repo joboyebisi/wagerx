@@ -13,10 +13,11 @@
 .dashboardHeader h1 {
   font-size: 32px;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #a8e6cf 0%, #4a90e2 50%, #9b59b6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  font-weight: 700;
 }
 
 .subtitle {
@@ -31,10 +32,11 @@
 }
 
 .naturalLanguageSection {
-  background: white;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(168, 230, 207, 0.2);
+  border: 1px solid rgba(168, 230, 207, 0.3);
 }
 
 .naturalLanguageSection h2 {
@@ -51,19 +53,22 @@
 
 .actionButton {
   padding: 16px;
-  background: white;
-  border: 2px solid #e0e0e0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border: 2px solid rgba(168, 230, 207, 0.3);
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  color: var(--text-primary);
 }
 
 .actionButton:hover {
-  border-color: #0088cc;
+  border-color: #4a90e2;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 136, 204, 0.2);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+  background: linear-gradient(135deg, #a8e6cf 0%, #4a90e2 100%);
+  color: white;
 }
 
 .recentWagers {
@@ -94,9 +99,10 @@
 }
 
 .wagerCard:hover {
-  border-color: #0088cc;
+  border-color: #4a90e2;
   transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 136, 204, 0.1);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+  background: linear-gradient(135deg, rgba(168, 230, 207, 0.1) 0%, rgba(74, 144, 226, 0.1) 100%);
 }
 
 .wagerHeader {

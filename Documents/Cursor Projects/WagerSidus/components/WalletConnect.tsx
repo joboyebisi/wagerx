@@ -24,17 +24,17 @@ export default function WalletConnect() {
   return (
     <div className={styles.walletConnect}>
       <div className={styles.walletConnectContent}>
-        <h1>Welcome to WagerSidus</h1>
+        <h1>Welcome to WagerX</h1>
         <p>Connect your wallet to start wagering with friends</p>
         <div className={styles.walletOptions}>
           <div className={`${styles.walletOption} ${styles.preferred}`}>
             <span className={styles.walletBadge}>Recommended</span>
-            <h3>TON Connect</h3>
-            <p>Connect via Telegram&apos;s native wallet</p>
+            <h3>Connect Existing Wallet</h3>
+            <p>Use your MetaMask, WalletConnect, Coinbase Wallet, or other existing wallet</p>
           </div>
           <div className={styles.walletOption}>
-            <h3>BNB Wallet</h3>
-            <p>Connect via MetaMask or WalletConnect</p>
+            <h3>TON Wallet</h3>
+            <p>Connect via Telegram&apos;s native wallet (Optional)</p>
           </div>
         </div>
         <button

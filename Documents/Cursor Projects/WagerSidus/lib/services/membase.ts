@@ -1,7 +1,25 @@
 import axios from 'axios';
 
-// Membase uses environment variables and hub storage, not API keys
-// Hub URL: https://testnet.hub.membase.io/
+/**
+ * Membase (Unibase) Service
+ * 
+ * Membase is a Python library for decentralized AI memory.
+ * This TypeScript service provides integration with Membase.
+ * 
+ * Framework: https://github.com/unibaseio/membase
+ * Installation: pip install git+https://github.com/unibaseio/membase.git
+ * 
+ * NOTE: This is a LOCAL Python library, not a cloud API service.
+ * No API keys are required - you install and use it directly.
+ * 
+ * Environment Variables (Identity, not API keys):
+ * - MEMBASE_ID: Any unique string (agent identifier)
+ * - MEMBASE_ACCOUNT: Account address (blockchain address)
+ * - MEMBASE_SECRET_KEY: Account secret (for signing)
+ * 
+ * Hub URL: https://testnet.hub.membase.io/
+ */
+
 const MEMBASE_HUB_URL = process.env.NEXT_PUBLIC_MEMBASE_HUB_URL || 'https://testnet.hub.membase.io';
 
 export interface MembaseMemory {
@@ -20,6 +38,13 @@ export interface MembaseMessage {
   metadata?: string;
 }
 
+export interface MembaseConversation {
+  id: string;
+  messages: MembaseMessage[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export class MembaseService {
   private membaseId: string;
   private membaseAccount: string;
@@ -27,16 +52,27 @@ export class MembaseService {
   private hubUrl: string;
 
   constructor() {
-    // Membase uses environment variables, not API keys
+    // Membase uses environment variables for identity (not API keys)
+    // These are blockchain-based identities
+    // MEMBASE_ID: Any unique string (your agent identifier)
+    // MEMBASE_ACCOUNT: Your account address (blockchain address)
+    // MEMBASE_SECRET_KEY: Your account secret (for signing transactions)
+    
     this.membaseId = process.env.MEMBASE_ID || process.env.NEXT_PUBLIC_MEMBASE_ID || 'default';
     this.membaseAccount = process.env.MEMBASE_ACCOUNT || process.env.NEXT_PUBLIC_MEMBASE_ACCOUNT || 'default';
-    this.membaseSecretKey = process.env.MEMBASE_SECRET_KEY || '';
+    this.membaseSecretKey = process.env.MEMBASE_SECRET_KEY || process.env.NEXT_PUBLIC_MEMBASE_SECRET_KEY || '';
     this.hubUrl = MEMBASE_HUB_URL;
+    
+    // Warn if using defaults (for production)
+    if (this.membaseId === 'default' || this.membaseAccount === 'default') {
+      console.warn('Membase: Using default identifiers. For production, set MEMBASE_ID and MEMBASE_ACCOUNT.');
+      console.warn('These are blockchain identities, not API keys. See: https://github.com/unibaseio/membase');
+    }
   }
 
   /**
    * Store memory in Membase hub
-   * Uses conversation-based storage similar to MultiMemory
+   * Python equivalent: mm.add(msg, conversation_id)
    */
   async store(
     key: string,
@@ -96,6 +132,7 @@ export class MembaseService {
 
   /**
    * Retrieve memory from Membase hub
+   * Python equivalent: mm.get(conversation_id)
    */
   async retrieve(key: string, conversationId?: string): Promise<MembaseMemory | null> {
     try {
@@ -143,8 +180,14 @@ export class MembaseService {
 
   /**
    * Search memories in Membase hub
+   * Python equivalent: Uses Chroma knowledge base for search
    */
   async search(query: string, filters?: Record<string, any>): Promise<MembaseMemory[]> {
+    // Membase is optional - return empty array if not configured or fails
+    if (this.membaseId === 'default' || this.membaseAccount === 'default') {
+      return [];
+    }
+    
     try {
       const response = await axios.post(
         `${this.hubUrl}/memory/search`,
@@ -207,6 +250,7 @@ export class MembaseService {
 
   /**
    * Add message to conversation (MultiMemory style)
+   * Python equivalent: mm.add(msg, conversation_id)
    */
   async addMessage(
     message: MembaseMessage,
@@ -226,6 +270,7 @@ export class MembaseService {
 
   /**
    * Get all messages from a conversation
+   * Python equivalent: mm.get(conversation_id)
    */
   async getConversation(conversationId: string): Promise<MembaseMessage[]> {
     try {
@@ -250,6 +295,38 @@ export class MembaseService {
     } catch (error: any) {
       console.error('Membase get conversation error:', error);
       return [];
+    }
+  }
+
+  /**
+   * Register agent on-chain
+   * Python equivalent: membase_chain.register(agent_name)
+   */
+  async registerOnChain(agentName: string): Promise<boolean> {
+    try {
+      // This would call the Python SDK's membase_chain.register()
+      // For now, we'll use the hub API
+      const response = await axios.post(
+        `${this.hubUrl}/chain/register`,
+        {
+          agent_name: agentName,
+          account: this.membaseAccount,
+          membase_id: this.membaseId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(this.membaseSecretKey && {
+              'Authorization': `Bearer ${this.membaseSecretKey}`,
+            }),
+          },
+        }
+      );
+
+      return response.data.success || false;
+    } catch (error: any) {
+      console.error('Membase chain registration error:', error);
+      return false;
     }
   }
 }

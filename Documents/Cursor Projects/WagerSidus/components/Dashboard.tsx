@@ -4,14 +4,16 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import NaturalLanguageInput from './NaturalLanguageInput';
-import SwapTokens from './SwapTokens';
+import ComprehensiveSwap from './ComprehensiveSwap';
 import { perplexityService, WagerIntent } from '@/lib/services/perplexity';
 import { memoryService } from '@/lib/services/memory';
+import { useTelegram } from '@/lib/hooks/useTelegram';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
   const { user, authenticated } = usePrivy();
   const router = useRouter();
+  const { showAlert } = useTelegram();
   const [recentWagers, setRecentWagers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -60,23 +62,40 @@ export default function Dashboard() {
 
       switch (intent.type) {
         case 'create':
+          // Navigate to create page with pre-filled data
+          // Show message that we're processing
+          showAlert('Creating your wager... Please complete the form.');
           router.push(`/wagers/create?intent=${encodeURIComponent(JSON.stringify(intent))}&message=${encodeURIComponent(message)}`);
           break;
         case 'accept':
           if (intent.wagerId) {
-            router.push(`/wagers/${intent.wagerId}`);
+            // Navigate to detail page - user can accept from there
+            router.push(`/wagers/${intent.wagerId}?action=accept`);
+          } else {
+            alert('Please specify a wager ID to accept. Example: "Accept wager #123"');
           }
           break;
         case 'resolve':
           if (intent.wagerId) {
+            // Navigate to detail page with resolve action
             router.push(`/wagers/${intent.wagerId}?action=resolve`);
+          } else {
+            alert('Please specify a wager ID to resolve. Example: "Resolve wager #123"');
           }
           break;
         case 'query':
           router.push('/wagers');
           break;
+        case 'cancel':
+          if (intent.wagerId) {
+            router.push(`/wagers/${intent.wagerId}?action=cancel`);
+          } else {
+            alert('Please specify a wager ID to cancel. Example: "Cancel wager #123"');
+          }
+          break;
         default:
           console.log('Unknown intent:', intent);
+          alert('I didn\'t understand that. Try: "Create a wager", "Accept wager #123", or "List my wagers"');
       }
     } catch (error) {
       console.error('Error handling intent:', error);
@@ -91,7 +110,7 @@ export default function Dashboard() {
   return (
     <div className={styles.dashboard}>
       <div className={styles.dashboardHeader}>
-        <h1>WagerSidus</h1>
+        <h1>WagerX</h1>
         <p className={styles.subtitle}>Wager with friends using natural language</p>
       </div>
 
@@ -117,7 +136,7 @@ export default function Dashboard() {
         </div>
 
         <div className={styles.swapSection}>
-          <SwapTokens />
+          <ComprehensiveSwap />
         </div>
 
         {recentWagers.length > 0 && (

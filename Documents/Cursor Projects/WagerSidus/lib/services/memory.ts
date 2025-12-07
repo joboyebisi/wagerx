@@ -2,6 +2,7 @@ import { membaseService } from './membase';
 import { WagerContract } from './sidusAI';
 import { WagerIntent } from './perplexity';
 import { WagerCategory } from './verification';
+import { getSupabaseClient } from '@/lib/supabase';
 
 export interface MemoryEntry {
   id: string;
@@ -26,14 +27,39 @@ export class MemoryService {
       address,
     };
 
-    // Store in Membase
-    const key = `memory:${address}:${memoryEntry.id}`;
-    await membaseService.store(key, memoryEntry, {
-      type: memoryEntry.type,
-      category: memoryEntry.category,
-      chainId: memoryEntry.chainId,
-      participants: memoryEntry.participants,
-    });
+    // Primary: Store in Supabase (if available)
+    try {
+      const supabase = getSupabaseClient();
+      await supabase.from('memory_entries').insert({
+        id: memoryEntry.id,
+        address: memoryEntry.address,
+        type: memoryEntry.type,
+        data: memoryEntry.data,
+        timestamp: memoryEntry.timestamp,
+        chain_id: memoryEntry.chainId,
+        participants: memoryEntry.participants,
+      });
+    } catch (error) {
+      console.warn('Supabase storage failed, using fallback:', error);
+      // Fallback: Store in Membase (if configured) or local storage
+      try {
+        const key = `memory:${address}:${memoryEntry.id}`;
+        await membaseService.store(key, memoryEntry, {
+          type: memoryEntry.type,
+          category: memoryEntry.category,
+          chainId: memoryEntry.chainId,
+          participants: memoryEntry.participants,
+        });
+      } catch (membaseError) {
+        console.warn('Membase storage failed, using local storage:', membaseError);
+        // Final fallback: local storage (client-side only)
+        if (typeof window !== 'undefined') {
+          const existing = JSON.parse(localStorage.getItem('wagersidus_memories') || '[]');
+          existing.push(memoryEntry);
+          localStorage.setItem('wagersidus_memories', JSON.stringify(existing));
+        }
+      }
+    }
 
     return memoryEntry;
   }
@@ -47,30 +73,102 @@ export class MemoryService {
       category?: WagerCategory;
     }
   ): Promise<MemoryEntry[]> {
-    // Search Membase for memories
-    const searchQuery = `address:${address}${filters?.type ? ` type:${filters.type}` : ''}${filters?.category ? ` category:${filters.category}` : ''}`;
-    const results = await membaseService.search(searchQuery, {
-      address,
-      ...(filters?.type && { type: filters.type }),
-      ...(filters?.category && { category: filters.category }),
-      ...(filters?.chainId && { chainId: filters.chainId }),
-    });
+    // Primary: Get from Supabase
+    try {
+      const supabase = getSupabaseClient();
+      let query = supabase
+        .from('memory_entries')
+        .select('*')
+        .eq('address', address);
 
-    let memories = results.map((result) => result.value as MemoryEntry);
+      if (filters?.type) {
+        query = query.eq('type', filters.type);
+      }
 
-    // Filter by participant if specified
-    if (filters?.participant) {
-      memories = memories.filter((mem) =>
-        mem.participants.includes(filters.participant!)
-      );
+      if (filters?.chainId) {
+        query = query.eq('chain_id', filters.chainId);
+      }
+
+      const { data, error } = await query.order('timestamp', { ascending: false });
+
+      if (!error && data) {
+        let memories = data.map((row: any) => ({
+          id: row.id,
+          address: row.address,
+          type: row.type,
+          data: row.data,
+          timestamp: row.timestamp,
+          chainId: row.chain_id,
+          participants: row.participants || [],
+          category: filters?.category, // Category not stored in DB, filter after
+        })) as MemoryEntry[];
+
+        // Filter by participant if specified
+        if (filters?.participant) {
+          memories = memories.filter((mem) =>
+            mem.participants.includes(filters.participant!)
+          );
+        }
+
+        return memories;
+      }
+    } catch (error) {
+      console.warn('Supabase retrieval failed, using fallback:', error);
     }
 
-    // Sort by timestamp descending
-    memories.sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    // Fallback: Search Membase
+    try {
+      const searchQuery = `address:${address}${filters?.type ? ` type:${filters.type}` : ''}${filters?.category ? ` category:${filters.category}` : ''}`;
+      const results = await membaseService.search(searchQuery, {
+        address,
+        ...(filters?.type && { type: filters.type }),
+        ...(filters?.category && { category: filters.category }),
+        ...(filters?.chainId && { chainId: filters.chainId }),
+      });
 
-    return memories;
+      let memories = results.map((result) => result.value as MemoryEntry);
+
+      if (filters?.participant) {
+        memories = memories.filter((mem) =>
+          mem.participants.includes(filters.participant!)
+        );
+      }
+
+      memories.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      return memories;
+    } catch (error) {
+      console.warn('Membase retrieval failed, using local storage:', error);
+    }
+
+    // Final fallback: Local storage
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('wagersidus_memories');
+      if (stored) {
+        const allMemories = JSON.parse(stored) as MemoryEntry[];
+        let memories = allMemories.filter((mem) => mem.address === address);
+
+        if (filters?.type) {
+          memories = memories.filter((mem) => mem.type === filters.type);
+        }
+
+        if (filters?.participant) {
+          memories = memories.filter((mem) =>
+            mem.participants.includes(filters.participant!)
+          );
+        }
+
+        memories.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+
+        return memories;
+      }
+    }
+
+    return [];
   }
 
   async storeWager(

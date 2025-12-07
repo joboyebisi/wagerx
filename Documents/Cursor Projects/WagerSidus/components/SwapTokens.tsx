@@ -107,7 +107,7 @@ export default function SwapTokens() {
 
       <div className={styles.info}>
         <p>⚠️ Note: You need at least 0.001 BNB for gas fees to perform the swap.</p>
-        <p>If you don't have BNB, try getting a tiny amount from a faucet first.</p>
+        <p>If you don&apos;t have BNB, try getting a tiny amount from a faucet first.</p>
       </div>
     </div>
   );

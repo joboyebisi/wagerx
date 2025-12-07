@@ -101,7 +101,7 @@ export class TelegramBotService {
   async handleStart(message: TelegramMessage): Promise<string> {
     const userName = message.from.first_name || 'there';
     
-    return `🎲 Welcome to WagerSidus, ${userName}!
+    return `🎲 Welcome to WagerX, ${userName}!
 
 I help you create and manage wagers on sports and crypto predictions using natural language or commands.
 
@@ -127,7 +127,7 @@ Need help? Type /help for more information.`;
    * Handle /help command
    */
   async handleHelp(message: TelegramMessage): Promise<string> {
-    return `📚 **WagerSidus Help**
+    return `📚 **WagerX Help**
 
 **Natural Language Examples:**
 • "I bet 10 BNB that Lakers beat Warriors on Dec 15th"
@@ -370,9 +370,9 @@ ${error.response?.data?.error || error.message}`;
   /**
    * Handle /list command
    */
-  async handleList(message: TelegramMessage): Promise<string> {
+  async handleList(msg: TelegramMessage): Promise<string> {
     try {
-      const response = await axios.get(`${this.apiUrl}/api/wagers?telegramUserId=${message.from.id}`);
+      const response: any = await axios.get(`${this.apiUrl}/api/wagers?telegramUserId=${msg.from.id}`);
 
       if (response.data.length === 0) {
         return `📋 **Your Wagers**
@@ -387,12 +387,13 @@ Create one with /create or use natural language:
       let message = `📋 **Your Wagers** (${wagers.length})\n\n`;
 
       wagers.slice(0, 10).forEach((wager: any) => {
-        const statusEmoji = {
+        const statusEmojiMap: Record<string, string> = {
           pending: '⏳',
           active: '🟢',
           resolved: '✅',
           cancelled: '❌',
-        }[wager.status] || '📋';
+        };
+        const statusEmoji = statusEmojiMap[wager.status] || '📋';
 
         message += `${statusEmoji} **#${wager.id}** - ${wager.condition}\n`;
         message += `   💰 ${wager.amount} BNB | Status: ${wager.status}\n`;
@@ -408,6 +409,66 @@ Create one with /create or use natural language:
       return `❌ **Error fetching wagers**
 
 ${error.response?.data?.error || error.message}`;
+    }
+  }
+
+  /**
+   * Handle /payout command
+   */
+  async handlePayout(message: TelegramMessage, args: string[]): Promise<string> {
+    if (args.length === 0) {
+      return `❌ **Missing wager ID**
+
+Usage: /payout <wagerId>
+
+Example: /payout 123`;
+    }
+
+    const wagerId = args[0];
+
+    try {
+      const response: any = await axios.get(`${this.apiUrl}/api/wagers/${wagerId}`);
+      
+      if (!response.data) {
+        return `❌ **Wager #${wagerId} not found.**`;
+      }
+
+      const wager = response.data;
+
+      if (wager.status === 'resolved' && wager.winner) {
+        return `✅ **Payout Status for Wager #${wagerId}**
+
+Status: **Completed**
+Winner: ${wager.winner}
+Amount: ${wager.amount} BNB
+
+Funds have been transferred to the winner's wallet.`;
+      } else if (wager.status === 'resolved' && !wager.winner) {
+        return `⚠️ **Payout Status for Wager #${wagerId}**
+
+Status: **Resolved, but winner not recorded.**
+Please contact support if you believe this is an error.`;
+      } else if (wager.status === 'active' || wager.status === 'pending') {
+        return `⏳ **Payout Status for Wager #${wagerId}**
+
+Status: **${wager.status.charAt(0).toUpperCase() + wager.status.slice(1)}**
+Payout will be processed once the wager is resolved.`;
+      } else if (wager.status === 'cancelled') {
+        return `❌ **Payout Status for Wager #${wagerId}**
+
+Status: **Cancelled**
+No payout was made for this wager.`;
+      } else {
+        return `❓ **Payout Status for Wager #${wagerId}**
+
+Status: **Unknown**
+Unable to determine payout status.`;
+      }
+    } catch (error: any) {
+      console.error('Error checking payout status:', error);
+      return `❌ **Error checking payout status for Wager #${wagerId}**
+
+${error.message || 'An unexpected error occurred.'}`;
     }
   }
 
@@ -430,12 +491,13 @@ Example: /wager 123`;
 
       if (response.data) {
         const wager = response.data;
-        const statusEmoji = {
+        const statusEmojiMap: Record<string, string> = {
           pending: '⏳',
           active: '🟢',
           resolved: '✅',
           cancelled: '❌',
-        }[wager.status] || '📋';
+        };
+        const statusEmoji = statusEmojiMap[wager.status] || '📋';
 
         let message = `${statusEmoji} **Wager #${wager.id}**\n\n`;
         message += `📝 **Condition:** ${wager.condition}\n`;
@@ -532,6 +594,8 @@ ${error.response?.data?.error || error.message}
         return await this.handleList(message);
       case 'wager':
         return await this.handleWager(message, args);
+      case 'payout':
+        return await this.handlePayout(message, args);
       default:
         return `❓ Unknown command: /${command}\n\nType /help for available commands.`;
     }
@@ -558,7 +622,7 @@ ${error.response?.data?.error || error.message}
    */
   async setCommands(): Promise<void> {
     const commands = [
-      { command: 'start', description: 'Start using WagerSidus' },
+      { command: 'start', description: 'Start using WagerX' },
       { command: 'create', description: 'Create a new wager' },
       { command: 'accept', description: 'Accept a wager' },
       { command: 'resolve', description: 'Resolve a wager' },

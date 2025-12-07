@@ -12,11 +12,30 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
   // Vercel deployment optimizations
-  output: 'standalone',
+  // Note: 'standalone' output is not needed for Vercel (it auto-detects Next.js)
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+  },
+  // Webpack config to handle Uniswap V4 SDK compatibility issues
+  webpack: (config, { isServer }) => {
+    // Ignore problematic imports from Uniswap V4 SDK
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+    
+    // Externalize problematic packages during build
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+      };
+    }
+    
+    return config;
   },
 };
 

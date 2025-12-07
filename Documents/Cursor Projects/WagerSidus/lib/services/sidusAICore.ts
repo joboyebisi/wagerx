@@ -1,17 +1,26 @@
-import axios from 'axios';
-
 /**
  * Sidus AI Core Integration
- * Based on: https://github.com/sidus-ai/sidus-ai-core
  * 
- * This service integrates with Sidus AI Core framework for AI agent management
- * and smart contract deployment on BNB Chain.
+ * Sidus AI Core is a Python framework for building AI agents.
+ * This TypeScript service provides integration with the framework.
+ * 
+ * Framework: https://github.com/sidus-ai/sidus-ai-core
+ * Installation: pip install git+https://github.com/sidus-ai/sidus-ai-core.git
+ * 
+ * NOTE: This is a LOCAL framework, not a cloud API service.
+ * No API keys are required - you install and use it directly.
+ * 
+ * For Next.js/TypeScript integration, you can:
+ * 1. Use the Python SDK via a backend API route
+ * 2. Use this service as a TypeScript wrapper
+ * 3. Call Python scripts from Node.js
  */
+
+import { sidusPluginManager } from '../plugins/sidus/plugin.manager';
 
 export interface SidusAgent {
   id: string;
   name: string;
-  address: string;
   capabilities: string[];
   status: 'active' | 'inactive' | 'pending';
 }
@@ -20,7 +29,7 @@ export interface SidusTask {
   id: string;
   description: string;
   status: 'pending' | 'active' | 'completed' | 'failed';
-  participants: string[];
+  participants?: string[];
   reward?: string;
   createdAt: string;
   completedAt?: string;
@@ -34,251 +43,148 @@ export interface SidusSkill {
   dependencies?: string[];
 }
 
-export interface WagerContract {
-  id: string;
-  address: string;
-  participants: string[];
-  amount: string;
-  condition: string;
-  status: 'pending' | 'active' | 'resolved' | 'cancelled';
-  createdAt: string;
-  resolvedAt?: string;
-  winner?: string;
-  charityEnabled?: boolean;
-  charityPercentage?: number;
-  charityAddress?: string;
-  charityDonated?: string;
-}
-
+/**
+ * Sidus AI Core Service
+ * 
+ * This service provides a TypeScript interface to the Sidus AI Core framework.
+ * Since Sidus AI Core is a Python framework, this service can:
+ * - Work with a Python backend API
+ * - Provide TypeScript wrappers for framework concepts
+ * - Integrate with plugins
+ */
 export class SidusAICoreService {
-  private apiKey: string;
-  private baseUrl: string;
   private agentId: string;
+  private pluginsInitialized: boolean = false;
 
-  constructor(apiKey?: string, baseUrl?: string, agentId?: string) {
-    this.apiKey = apiKey || process.env.NEXT_PUBLIC_SIDUS_AI_API_KEY || '';
-    this.baseUrl = baseUrl || 'https://api.sidus.ai';
+  constructor(agentId?: string) {
+    // No API key needed - this is a local framework
     this.agentId = agentId || process.env.NEXT_PUBLIC_SIDUS_AGENT_ID || 'wager-agent';
   }
 
   /**
-   * Create a wager contract using Sidus AI Core
-   * This would integrate with the Sidus AI framework to deploy contracts
+   * Initialize plugins for this agent
    */
-  async createWagerContract(
-    participants: string[],
-    amount: string,
-    condition: string,
-    chainId: number = 56, // BNB Chain
-    charityOptions?: {
-      enabled: boolean;
-      percentage?: number;
-      address?: string;
-    }
-  ): Promise<WagerContract> {
+  private async initializePlugins(): Promise<void> {
+    if (this.pluginsInitialized) return;
+    
     try {
-      // Integrate with Sidus AI Core framework
-      // This would use the Sidus AI agent system to deploy the contract
-      const response = await axios.post(
-        `${this.baseUrl}/v1/agents/${this.agentId}/tasks`,
-        {
-          task_type: 'deploy_wager_contract',
-          parameters: {
-            participants,
-            amount,
-            condition,
-            chain_id: chainId,
-            charity_enabled: charityOptions?.enabled || false,
-            charity_percentage: charityOptions?.percentage,
-            charity_address: charityOptions?.address,
-          },
+      // Initialize plugins (like Perplexity)
+      const { initializeDefaultPlugins } = await import('../plugins/sidus/plugin.manager');
+      await initializeDefaultPlugins({
+        perplexity: {
+          apiKey: process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY,
         },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      // The task would return the deployed contract
-      return response.data.contract;
-    } catch (error: any) {
-      console.error('Sidus AI Core contract creation error:', error);
-      
-      // Fallback: Create a mock contract (for development)
-      // In production, this should fail or retry
-      return {
-        id: `wager_${Date.now()}`,
-        address: `0x${Math.random().toString(16).substr(2, 40)}`,
-        participants,
-        amount,
-        condition,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        charityEnabled: charityOptions?.enabled || false,
-        charityPercentage: charityOptions?.percentage,
-        charityAddress: charityOptions?.address,
-      };
+      });
+      this.pluginsInitialized = true;
+    } catch (error) {
+      console.warn('Failed to initialize plugins:', error);
     }
   }
 
   /**
-   * Resolve wager using Sidus AI agent
+   * Use a plugin to execute an action
+   * This integrates with the Sidus AI Core plugin system
    */
-  async resolveWager(
-    wagerId: string,
-    winner: string,
-    evidence?: string
-  ): Promise<WagerContract> {
-    try {
-      const response = await axios.post(
-        `${this.baseUrl}/v1/agents/${this.agentId}/tasks`,
-        {
-          task_type: 'resolve_wager',
-          parameters: {
-            wager_id: wagerId,
-            winner,
-            evidence,
-          },
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      return response.data.contract;
-    } catch (error: any) {
-      console.error('Sidus AI Core wager resolution error:', error);
-      throw error;
-    }
+  async usePlugin(pluginId: string, action: string, params: Record<string, any>): Promise<any> {
+    await this.initializePlugins();
+    return await sidusPluginManager.executePlugin(pluginId, action, params);
   }
 
   /**
-   * Get wager contract details
+   * Create an agent instance
+   * In Python: agent = ds.DeepSeekSingleChatAgent(...)
    */
-  async getWagerContract(wagerId: string): Promise<WagerContract> {
-    try {
-      const response = await axios.get(
-        `${this.baseUrl}/v1/contracts/wager/${wagerId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-          },
-        }
-      );
+  async createAgent(config: {
+    type: 'deepseek' | 'openai' | 'custom';
+    apiKey?: string;
+    systemPrompt?: string;
+    capabilities?: string[];
+  }): Promise<SidusAgent> {
+    await this.initializePlugins();
 
-      return response.data;
-    } catch (error: any) {
-      console.error('Sidus AI Core get wager error:', error);
-      throw error;
-    }
+    return {
+      id: this.agentId,
+      name: `wager-agent-${this.agentId}`,
+      capabilities: config.capabilities || ['wager_management', 'intent_detection'],
+      status: 'active',
+    };
   }
 
   /**
-   * Register agent with Sidus AI Core
+   * Send a message to the agent
+   * In Python: agent.send_to_chat(message='...', handler=...)
    */
-  async registerAgent(agentName: string, capabilities: string[]): Promise<SidusAgent> {
-    try {
-      const response = await axios.post(
-        `${this.baseUrl}/v1/agents/register`,
-        {
-          agent_id: this.agentId,
-          name: agentName,
-          capabilities,
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+  async sendToAgent(
+    message: string,
+    handler?: (response: any) => void
+  ): Promise<string | null> {
+    await this.initializePlugins();
 
-      return response.data;
-    } catch (error: any) {
-      console.error('Sidus AI Core agent registration error:', error);
-      throw error;
+    // Use Perplexity plugin for intent detection
+    const result = await this.usePlugin('perplexity-ai', 'detect_intent', {
+      message,
+      context: {},
+    });
+
+    if (handler && result.success) {
+      handler(result.data);
     }
+
+    return result.success ? JSON.stringify(result.data) : null;
   }
 
   /**
-   * Get connected agents (for interoperability)
+   * Build the agent application
+   * In Python: agent.application_build()
    */
-  async getConnectedAgents(userAddress: string): Promise<SidusAgent[]> {
-    try {
-      const response = await axios.get(
-        `${this.baseUrl}/v1/agents/connected?address=${userAddress}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-          },
-        }
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Sidus AI Core get agents error:', error);
-      return [];
-    }
+  async buildApplication(): Promise<void> {
+    await this.initializePlugins();
+    // Initialize all plugins and prepare the agent
   }
 
   /**
-   * Create a task in Sidus AI Core (for agent coordination)
+   * Get agent skills (weighted graph)
+   * Sidus AI Core uses a weighted skill graph for task solving
+   */
+  async getAgentSkills(): Promise<SidusSkill[]> {
+    await this.initializePlugins();
+
+    // Return available skills from plugins
+    const plugins = sidusPluginManager.getPlugins();
+    return plugins.map((plugin) => ({
+      id: plugin.id,
+      name: plugin.name,
+      description: plugin.description,
+      weight: 1.0,
+      dependencies: [],
+    }));
+  }
+
+  /**
+   * Create a task
+   * In Python: You can create custom tasks for the agent
    */
   async createTask(
     taskId: string,
     description: string,
     reward?: string
   ): Promise<SidusTask> {
-    try {
-      const response = await axios.post(
-        `${this.baseUrl}/v1/tasks`,
-        {
-          task_id: taskId,
-          description,
-          reward,
-          agent_id: this.agentId,
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Sidus AI Core create task error:', error);
-      throw error;
-    }
+    return {
+      id: taskId,
+      description,
+      status: 'pending',
+      reward,
+      createdAt: new Date().toISOString(),
+    };
   }
 
   /**
-   * Get agent skills (weighted graph)
+   * Get connected agents (for multi-agent scenarios)
    */
-  async getAgentSkills(): Promise<SidusSkill[]> {
-    try {
-      const response = await axios.get(
-        `${this.baseUrl}/v1/agents/${this.agentId}/skills`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-          },
-        }
-      );
-
-      return response.data;
-    } catch (error: any) {
-      console.error('Sidus AI Core get skills error:', error);
-      return [];
-    }
+  async getConnectedAgents(userAddress: string): Promise<SidusAgent[]> {
+    // In a real implementation, this would query the agent network
+    return [];
   }
 }
 
 export const sidusAICoreService = new SidusAICoreService();
-

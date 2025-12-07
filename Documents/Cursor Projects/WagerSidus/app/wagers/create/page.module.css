@@ -1,0 +1,246 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 30px;
+}
+
+.header h1 {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.subtitle {
+  color: var(--tg-theme-hint-color, #666);
+  font-size: 0.95rem;
+}
+
+.balanceInfo {
+  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+.balanceInfo strong {
+  color: var(--tg-theme-button-color, #007bff);
+  font-size: 1.1rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+  font-size: 0.95rem;
+}
+
+.formGroup input,
+.formGroup textarea {
+  padding: 12px;
+  border: 1px solid var(--tg-theme-hint-color, #ddd);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  transition: border-color 0.2s;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: var(--tg-theme-button-color, #007bff);
+}
+
+.errorInput {
+  border-color: #dc3545 !important;
+}
+
+.errorText {
+  color: #dc3545;
+  font-size: 0.85rem;
+}
+
+.warningText {
+  color: #ff9800;
+  font-size: 0.85rem;
+}
+
+.categorySelector {
+  display: flex;
+  gap: 12px;
+}
+
+.categoryButton {
+  flex: 1;
+  padding: 12px 20px;
+  border: 2px solid var(--tg-theme-hint-color, #ddd);
+  border-radius: 8px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.categoryButton:hover {
+  border-color: var(--tg-theme-button-color, #007bff);
+}
+
+.categoryButton.active {
+  border-color: var(--tg-theme-button-color, #007bff);
+  background: var(--tg-theme-button-color, #007bff);
+  color: var(--tg-theme-button-text-color, #fff);
+}
+
+.participantInput {
+  display: flex;
+  gap: 8px;
+}
+
+.participantInput input {
+  flex: 1;
+}
+
+.addButton {
+  padding: 12px 20px;
+  background: var(--tg-theme-button-color, #007bff);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.addButton:hover {
+  opacity: 0.9;
+}
+
+.participantList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.participantItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+  border-radius: 6px;
+}
+
+.participantAddress {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.removeButton {
+  padding: 6px 12px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.removeButton:hover {
+  opacity: 0.9;
+}
+
+.statusInfo {
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.loading {
+  color: var(--tg-theme-button-color, #007bff);
+  text-align: center;
+}
+
+.success {
+  color: #28a745;
+  text-align: center;
+}
+
+.error {
+  color: #dc3545;
+  text-align: center;
+}
+
+.submitButton {
+  padding: 16px;
+  background: var(--tg-theme-button-color, #007bff);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  margin-top: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 12px;
+  background: transparent;
+  color: var(--tg-theme-hint-color, #666);
+  border: 1px solid var(--tg-theme-hint-color, #ddd);
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.cancelButton:hover {
+  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .categorySelector {
+    flex-direction: column;
+  }
+}
+

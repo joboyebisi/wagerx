@@ -244,6 +244,13 @@ export async function completeLINKToBNBSwap(
     
     const receipt = await swapTx.wait();
     
+    if (!receipt) {
+      return {
+        success: false,
+        error: 'Transaction receipt not available',
+      };
+    }
+    
     return {
       success: true,
       txHash: receipt.hash,

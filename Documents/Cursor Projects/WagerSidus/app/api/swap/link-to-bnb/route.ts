@@ -38,31 +38,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has private key (for server-side signing)
-    // In production, you'd use Privy's sendTransaction instead
-    const privateKey = process.env.PRIVATE_KEY;
+    // Note: This route requires client-side signing via Privy
+    // PRIVATE_KEY is optional and only used for server-side operations
+    // Users sign transactions in their own wallets (Privy handles this)
     
-    if (!privateKey) {
-      return NextResponse.json(
-        {
-          error: 'Server configuration error. This swap requires client-side signing.',
-          suggestion: 'Use the swap script instead: npx ts-node scripts/swap-link-to-bnb.ts',
-        },
-        { status: 500 }
-      );
-    }
-
-    // Create provider and signer
+    // Create provider (no signer needed - user signs client-side)
     const provider = new ethers.JsonRpcProvider(BSC_TESTNET_CONFIG.RPC);
-    const signer = new ethers.Wallet(privateKey, provider);
-
-    // Verify the wallet address matches (security check)
-    if (signer.address.toLowerCase() !== walletAddress.toLowerCase()) {
-      return NextResponse.json(
-        { error: 'Wallet address mismatch. Use the swap script with your own private key.' },
-        { status: 403 }
-      );
-    }
 
     // Check balances
     const linkBalance = await getLINKBalance(walletAddress, provider);
@@ -87,21 +68,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Execute swap
-    const result = await completeLINKToBNBSwap(amount, walletAddress, signer);
-
-    if (result.success) {
-      return NextResponse.json({
-        success: true,
-        txHash: result.txHash,
-        message: `Successfully swapped ${amount} LINK for BNB`,
-      });
-    } else {
-      return NextResponse.json(
-        { error: result.error || 'Swap failed' },
-        { status: 500 }
-      );
-    }
+    // Note: This swap requires client-side signing via Privy
+    // The swap should be executed on the client side using Privy's sendTransaction
+    // This API route only validates balances - actual swap execution happens client-side
+    return NextResponse.json(
+      {
+        error: 'Swap execution requires client-side signing. Please use the swap component with Privy wallet connection.',
+        balances: {
+          link: linkBalance,
+          bnb: bnbBalance,
+        },
+        suggestion: 'Use the swap UI component which handles client-side transaction signing',
+      },
+      { status: 400 }
+    );
   } catch (error: any) {
     console.error('Swap API error:', error);
     return NextResponse.json(

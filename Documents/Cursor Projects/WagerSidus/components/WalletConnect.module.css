@@ -4,7 +4,7 @@
   justify-content: center;
   min-height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #a8e6cf 0%, #4a90e2 50%, #9b59b6 100%);
 }
 
 .walletConnectContent {
@@ -46,15 +46,15 @@
 }
 
 .walletOption.preferred {
-  border-color: #0088cc;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #4a90e2;
+  background: linear-gradient(135deg, #e8f5f0 0%, #d4edf5 100%);
 }
 
 .walletBadge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #0088cc;
+  background: linear-gradient(135deg, #a8e6cf 0%, #4a90e2 100%);
   color: white;
   padding: 4px 12px;
   border-radius: 12px;
@@ -76,7 +76,7 @@
 .connectButton {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #a8e6cf 0%, #4a90e2 50%, #9b59b6 100%);
   color: white;
   border-radius: 12px;
   font-size: 16px;
@@ -86,7 +86,7 @@
 
 .connectButton:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 10px 20px rgba(168, 230, 207, 0.4);
 }
 
 .connectButton:disabled {

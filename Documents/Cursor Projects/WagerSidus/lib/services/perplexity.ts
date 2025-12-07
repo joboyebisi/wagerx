@@ -12,6 +12,9 @@ export interface WagerIntent {
   wagerId?: string;
   winner?: string;
   confidence: number;
+  // Validation
+  missingFields?: string[]; // Fields missing for create intent
+  isValid?: boolean; // Whether all required fields are present
   // Sports-specific
   sport?: string;
   teams?: string[];
@@ -54,6 +57,13 @@ export class PerplexityService {
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY || '';
+    
+    // Warn if API key is missing or invalid format
+    if (!this.apiKey || this.apiKey.trim() === '') {
+      console.warn('⚠️  Perplexity API key is not set. Set NEXT_PUBLIC_PERPLEXITY_API_KEY in your .env.local file.');
+    } else if (!this.apiKey.startsWith('pplx-')) {
+      console.warn('⚠️  Perplexity API key format may be incorrect. Expected format: pplx-...');
+    }
   }
 
   /**
@@ -64,16 +74,24 @@ export class PerplexityService {
       const systemPrompt = `You are an AI assistant that helps detect wager intents from natural language. 
 This platform ONLY supports SPORTS and CRYPTO predictions that can be verified via APIs.
 
+CRITICAL: For CREATE intent, you MUST extract ALL required fields before confirming:
+- category: "sports" OR "crypto" (REQUIRED)
+- amount: numeric value (REQUIRED)
+- currency: "BNB" or token symbol (REQUIRED)
+- condition: verifiable prediction description (REQUIRED)
+- participants: at least 2 wallet addresses or Telegram usernames (REQUIRED)
+
 Analyze the user's message and extract:
 1. Intent type: create, accept, resolve, cancel, or query
-2. Category: "sports" or "crypto" (REQUIRED for create intent)
-3. Participants (if mentioned)
-4. Amount and currency
-5. Condition/description (must be verifiable via APIs)
-6. Wager ID (if referencing existing wager)
-7. Winner (if resolving)
-8. Confidence score (0-1)
-9. Charity (optional): If user mentions donating a percentage to charity, extract:
+2. Category: "sports" or "crypto" (REQUIRED for create intent - MUST be one of these)
+3. Participants: array of wallet addresses or Telegram usernames (REQUIRED for create - minimum 2)
+4. Amount: numeric value (REQUIRED for create)
+5. Currency: "BNB" or token symbol (REQUIRED for create)
+6. Condition: detailed, verifiable description (REQUIRED for create - must be API-verifiable)
+7. Wager ID (if referencing existing wager)
+8. Winner (if resolving)
+9. Confidence score (0-1)
+10. Charity (optional): If user mentions donating a percentage to charity, extract:
    - charityEnabled: true/false
    - charityPercentage: 0-100 (if mentioned)
    - charityAddress: wallet address (if specified)
@@ -81,12 +99,24 @@ Analyze the user's message and extract:
 For SPORTS wagers: Extract teams, sport type, event date, and condition (e.g., "Team A wins", "Total points > 50")
 For CRYPTO wagers: Extract symbol (BTC, ETH, etc.), condition (e.g., "BTC > $50000", "ETH increases by 10%"), and target date
 
+VALIDATION RULES:
+- If intent is "create" but ANY required field is missing, set confidence to 0 and include a "missingFields" array
+- Return missingFields: ["category"] if category not found
+- Return missingFields: ["amount"] if amount not found
+- Return missingFields: ["condition"] if condition not found or too vague
+- Return missingFields: ["participants"] if less than 2 participants found
+
 Return ONLY a valid JSON object with this structure. Be precise and extract all relevant information.`;
+
+      // Validate API key
+      if (!this.apiKey || this.apiKey.trim() === '') {
+        throw new Error('Perplexity API key is not configured. Please set NEXT_PUBLIC_PERPLEXITY_API_KEY in your environment variables.');
+      }
 
       const response = await axios.post<PerplexityResponse>(
         PERPLEXITY_API_URL,
         {
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar', // Valid Perplexity model
           messages: [
             { role: 'system', content: systemPrompt },
             {
@@ -113,16 +143,46 @@ Return ONLY a valid JSON object with this structure. Be precise and extract all 
 
       // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
+      let intent: WagerIntent;
+      
       if (jsonMatch) {
         try {
-          return JSON.parse(jsonMatch[0]) as WagerIntent;
+          intent = JSON.parse(jsonMatch[0]) as WagerIntent;
         } catch (parseError) {
           console.error('JSON parse error:', parseError);
+          intent = this.parseIntentFallback(userMessage, content);
+        }
+      } else {
+        // Fallback parsing
+        intent = this.parseIntentFallback(userMessage, content);
+      }
+
+      // Validate intent if it's a create request
+      if (intent.type === 'create') {
+        const missingFields: string[] = [];
+        
+        if (!intent.category || (intent.category !== 'sports' && intent.category !== 'crypto')) {
+          missingFields.push('category');
+        }
+        if (!intent.amount || parseFloat(intent.amount) <= 0) {
+          missingFields.push('amount');
+        }
+        if (!intent.condition || intent.condition.trim().length < 10) {
+          missingFields.push('condition');
+        }
+        if (!intent.participants || intent.participants.length < 2) {
+          missingFields.push('participants');
+        }
+        
+        intent.missingFields = missingFields;
+        intent.isValid = missingFields.length === 0;
+        
+        if (missingFields.length > 0) {
+          intent.confidence = 0; // Low confidence if fields missing
         }
       }
 
-      // Fallback parsing
-      return this.parseIntentFallback(userMessage, content);
+      return intent;
     } catch (error: any) {
       console.error('Perplexity intent detection error:', error);
       return this.parseIntentFallback(userMessage);
@@ -150,7 +210,7 @@ Return ONLY a valid JSON object with this structure. Be precise and extract all 
       const response = await axios.post<PerplexityResponse>(
         PERPLEXITY_API_URL,
         {
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar', // Valid Perplexity model
           messages: [
             {
               role: 'system',
@@ -227,7 +287,7 @@ Return ONLY a valid JSON object with this structure. Be precise and extract all 
       const response = await axios.post<PerplexityResponse>(
         PERPLEXITY_API_URL,
         {
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar', // Valid Perplexity model
           messages: [
             {
               role: 'system',
@@ -295,7 +355,7 @@ Return ONLY a valid JSON object with this structure. Be precise and extract all 
       const response = await axios.post<PerplexityResponse>(
         PERPLEXITY_API_URL,
         {
-          model: 'llama-3.1-sonar-small-128k-online',
+          model: 'sonar', // Valid Perplexity model
           messages: [
             {
               role: 'system',

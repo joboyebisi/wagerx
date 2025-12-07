@@ -18,6 +18,27 @@ export function getSupabaseClient(): SupabaseClient {
     throw new Error('Missing Supabase environment variables');
   }
 
+  // Validate URL format
+  try {
+    const url = new URL(supabaseUrl);
+    if (!url.protocol.startsWith('http')) {
+      throw new Error('Invalid Supabase URL protocol');
+    }
+  } catch (error) {
+    // During build/SSR, return a mock client instead of throwing
+    if (typeof window === 'undefined') {
+      // Only warn if it's actually a placeholder, not a real URL that failed parsing
+      if (supabaseUrl && !supabaseUrl.includes('placeholder') && !supabaseUrl.includes('your_')) {
+        // Real URL that failed parsing - this is unexpected
+        console.error(`Failed to parse supabaseUrl: ${supabaseUrl}`, error);
+      } else {
+        console.warn(`Invalid supabaseUrl during build: ${supabaseUrl}. Using placeholder.`);
+      }
+      return createClient('https://placeholder.supabase.co', 'placeholder-key');
+    }
+    throw new Error(`Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL. Got: ${supabaseUrl}`);
+  }
+
   supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
   return supabaseClient;
 }
