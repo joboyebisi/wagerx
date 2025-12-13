@@ -1,7 +1,0 @@
-{
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm ci --legacy-peer-deps || npm install --legacy-peer-deps",
-  "framework": "nextjs"
-}
-
