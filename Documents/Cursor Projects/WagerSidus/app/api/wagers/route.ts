@@ -2,6 +2,71 @@ import { NextRequest, NextResponse } from 'next/server';
 import { memoryService } from '@/lib/services/memory';
 import { WagerContract } from '@/lib/services/sidusAI';
 import { WagerCategory } from '@/lib/services/verification';
+import { createServerClient } from '@/lib/supabase';
+
+/**
+ * Helper function to fetch wagers from Supabase directly
+ * (Avoids internal HTTP calls which cause 404 errors)
+ */
+async function getWagersFromSupabase(address: string, category: string | null) {
+  const supabase = createServerClient();
+  let wagers: any[] = [];
+  
+  // Get user's telegram_id from wallet address
+  const { data: user } = await supabase
+    .from('users')
+    .select('telegram_id')
+    .eq('wallet_address', address)
+    .single();
+
+  // Get wagers where user is creator
+  if (user?.telegram_id) {
+    const { data: creatorWagers, error: creatorError } = await supabase
+      .from('wagers')
+      .select(`
+        *,
+        participants (*)
+      `)
+      .eq('creator_telegram_id', user.telegram_id);
+
+    if (!creatorError && creatorWagers) {
+      wagers = creatorWagers;
+    }
+  }
+
+  // Also get wagers where user is a participant
+  const { data: participantWagers, error: participantError } = await supabase
+    .from('participants')
+    .select(`
+      wager_id,
+      wagers (*)
+    `)
+    .eq('wallet_address', address);
+
+  if (!participantError && participantWagers) {
+    const additionalWagers = participantWagers
+      .map((p: any) => p.wagers)
+      .filter((w: any) => w && !wagers.some((existing: any) => existing.id === w.id));
+
+    wagers.push(...additionalWagers);
+  }
+
+  // Transform Supabase format to expected format
+  return wagers.map((w: any) => ({
+    id: w.id || w.wager_id_onchain || '0',
+    condition: w.description || w.condition,
+    amount: w.amount?.toString() || '0',
+    status: w.status || 'pending',
+    category: w.wager_type || category || 'sports',
+    participants: w.participants?.map((p: any) => p.wallet_address || p) || [],
+    createdAt: w.created_at || new Date().toISOString(),
+    charityEnabled: w.charity_enabled || false,
+    charityPercentage: w.charity_percentage || 0,
+    charityAddress: w.charity_wallet,
+    txHash: w.tx_hash,
+    contractAddress: w.contract_address,
+  }));
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,32 +81,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Try Supabase first (primary storage)
+    // Try Supabase first (primary storage) - direct function call, not HTTP
     try {
-      const supabaseResponse = await fetch(`${request.nextUrl.origin}/api/wagers/supabase?address=${encodeURIComponent(address)}`);
-      if (supabaseResponse.ok) {
-        const supabaseWagers = await supabaseResponse.json();
-        if (Array.isArray(supabaseWagers) && supabaseWagers.length > 0) {
-          // Transform Supabase format to expected format
-          const transformedWagers = supabaseWagers.map((w: any) => ({
-            id: w.id || w.wager_id_onchain || '0',
-            condition: w.description || w.condition,
-            amount: w.amount?.toString() || '0',
-            status: w.status || 'pending',
-            category: w.wager_type || category || 'sports',
-            participants: w.participants?.map((p: any) => p.wallet_address || p) || [],
-            createdAt: w.created_at || new Date().toISOString(),
-            charityEnabled: w.charity_enabled || false,
-            charityPercentage: w.charity_percentage || 0,
-            charityAddress: w.charity_wallet,
-            txHash: w.tx_hash,
-            contractAddress: w.contract_address,
-          }));
-          return NextResponse.json(transformedWagers);
-        }
-        // If no wagers found in Supabase, return empty array
-        return NextResponse.json([]);
+      const supabaseWagers = await getWagersFromSupabase(address, category);
+      if (supabaseWagers.length > 0) {
+        return NextResponse.json(supabaseWagers);
       }
+      // If no wagers found in Supabase, return empty array
+      return NextResponse.json([]);
     } catch (supabaseError) {
       console.warn('Failed to fetch from Supabase, falling back to memory service:', supabaseError);
     }
@@ -113,30 +160,65 @@ export async function POST(request: NextRequest) {
       charityAddress: charityAddress || undefined,
     };
 
-    // Store wager in Supabase (primary storage)
+    // Store wager in Supabase (primary storage) - direct function call, not HTTP
     try {
-      const supabaseResponse = await fetch(`${request.nextUrl.origin}/api/wagers/supabase`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wagerId,
-          txHash,
-          creatorAddress,
-          participants,
-          amount,
-          condition,
-          category,
-          charityEnabled,
-          charityPercentage,
-          charityAddress,
-          contractAddress,
-        }),
-      });
+      const supabase = createServerClient();
 
-      if (supabaseResponse.ok) {
-        const supabaseData = await supabaseResponse.json();
-        console.log('Wager stored in Supabase:', supabaseData);
+      // Create or update user
+      const { data: user } = await supabase
+        .from('users')
+        .upsert({
+          wallet_address: creatorAddress,
+          telegram_id: `user_${creatorAddress.slice(0, 8)}`,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'wallet_address',
+        })
+        .select()
+        .single();
+
+      // Create wager in Supabase
+      const { data: wager, error: wagerError } = await supabase
+        .from('wagers')
+        .insert({
+          creator_telegram_id: user?.telegram_id || `user_${creatorAddress.slice(0, 8)}`,
+          description: condition,
+          amount: parseFloat(amount),
+          wager_type: category || 'sports',
+          status: 'pending',
+          charity_enabled: charityEnabled || false,
+          charity_percentage: charityEnabled ? charityPercentage : null,
+          charity_wallet: charityEnabled ? charityAddress : null,
+          contract_address: contractAddress || process.env.NEXT_PUBLIC_WAGER_CONTRACT_ADDRESS,
+          wager_id_onchain: wagerId.toString(),
+          tx_hash: txHash,
+        })
+        .select()
+        .single();
+
+      if (wagerError) {
+        throw wagerError;
       }
+
+      // Create participants
+      if (wager && participants.length > 0) {
+        const participantInserts = participants.map((address: string, index: number) => ({
+          wager_id: wager.id,
+          telegram_id: `participant_${address.slice(0, 8)}`,
+          wallet_address: address,
+          funded: index === 0, // Creator is funded
+        }));
+
+        const { error: participantsError } = await supabase
+          .from('participants')
+          .insert(participantInserts);
+
+        if (participantsError) {
+          console.error('Error creating participants:', participantsError);
+        }
+      }
+
+      console.log('Wager stored in Supabase:', { wagerId: wager.id, onChainWagerId: wagerId.toString() });
     } catch (supabaseError) {
       console.warn('Failed to store in Supabase, using fallback:', supabaseError);
     }

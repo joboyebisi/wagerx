@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "npm install --legacy-peer-deps --force && next build"
+    "vercel-build": "rm -rf node_modules .next && npm install --legacy-peer-deps --force && next build"
   },
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "^1.2.1",

@@ -1,7 +1,8 @@
 {
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install --legacy-peer-deps --force",
-  "framework": "nextjs"
+  "installCommand": "rm -rf node_modules .next && npm install --legacy-peer-deps --force",
+  "framework": "nextjs",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ."
 }
 
