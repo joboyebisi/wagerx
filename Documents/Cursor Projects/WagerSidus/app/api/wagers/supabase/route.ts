@@ -126,27 +126,55 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Get wagers where user is creator or participant
-    let query = supabase
-      .from('wagers')
-      .select(`
-        *,
-        participants (*)
-      `);
+    // Get wagers where user is creator (by wallet address)
+    let wagers: any[] = [];
+    
+    if (address) {
+      // First, get user's telegram_id from wallet address
+      const { data: user } = await supabase
+        .from('users')
+        .select('telegram_id')
+        .eq('wallet_address', address)
+        .single();
+
+      // Get wagers where user is creator
+      if (user?.telegram_id) {
+        const { data: creatorWagers, error: creatorError } = await supabase
+          .from('wagers')
+          .select(`
+            *,
+            participants (*)
+          `)
+          .eq('creator_telegram_id', user.telegram_id);
+
+        if (!creatorError && creatorWagers) {
+          wagers = creatorWagers;
+        }
+      }
+    }
 
     if (telegramId) {
-      query = query.or(`creator_telegram_id.eq.${telegramId}`);
+      const { data: telegramWagers, error: telegramError } = await supabase
+        .from('wagers')
+        .select(`
+          *,
+          participants (*)
+        `)
+        .eq('creator_telegram_id', telegramId);
+
+      if (!telegramError && telegramWagers) {
+        // Merge with existing wagers, avoiding duplicates
+        telegramWagers.forEach((w: any) => {
+          if (!wagers.some((existing: any) => existing.id === w.id)) {
+            wagers.push(w);
+          }
+        });
+      }
     }
 
-    const { data: wagers, error } = await query;
-
-    if (error) {
-      throw error;
-    }
-
-    // Also get wagers where user is a participant
+    // Also get wagers where user is a participant (by wallet address)
     if (address) {
-      const { data: participantWagers } = await supabase
+      const { data: participantWagers, error: participantError } = await supabase
         .from('participants')
         .select(`
           wager_id,
@@ -154,14 +182,12 @@ export async function GET(request: NextRequest) {
         `)
         .eq('wallet_address', address);
 
-      if (participantWagers) {
+      if (!participantError && participantWagers) {
         const additionalWagers = participantWagers
           .map((p: any) => p.wagers)
-          .filter((w: any) => !wagers?.some((existing: any) => existing.id === w.id));
+          .filter((w: any) => w && !wagers.some((existing: any) => existing.id === w.id));
 
-        if (wagers) {
-          wagers.push(...additionalWagers);
-        }
+        wagers.push(...additionalWagers);
       }
     }
 

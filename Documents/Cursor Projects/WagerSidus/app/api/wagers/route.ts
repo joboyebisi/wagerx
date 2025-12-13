@@ -16,6 +16,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Try Supabase first (primary storage)
+    try {
+      const supabaseResponse = await fetch(`${request.nextUrl.origin}/api/wagers/supabase?address=${encodeURIComponent(address)}`);
+      if (supabaseResponse.ok) {
+        const supabaseWagers = await supabaseResponse.json();
+        if (Array.isArray(supabaseWagers) && supabaseWagers.length > 0) {
+          // Transform Supabase format to expected format
+          const transformedWagers = supabaseWagers.map((w: any) => ({
+            id: w.id || w.wager_id_onchain || '0',
+            condition: w.description || w.condition,
+            amount: w.amount?.toString() || '0',
+            status: w.status || 'pending',
+            category: w.wager_type || category || 'sports',
+            participants: w.participants?.map((p: any) => p.wallet_address || p) || [],
+            createdAt: w.created_at || new Date().toISOString(),
+            charityEnabled: w.charity_enabled || false,
+            charityPercentage: w.charity_percentage || 0,
+            charityAddress: w.charity_wallet,
+            txHash: w.tx_hash,
+            contractAddress: w.contract_address,
+          }));
+          return NextResponse.json(transformedWagers);
+        }
+        // If no wagers found in Supabase, return empty array
+        return NextResponse.json([]);
+      }
+    } catch (supabaseError) {
+      console.warn('Failed to fetch from Supabase, falling back to memory service:', supabaseError);
+    }
+
+    // Fallback to memory service
     const wagers = await memoryService.getWagerHistory(address, category || undefined);
     return NextResponse.json(wagers);
   } catch (error: any) {

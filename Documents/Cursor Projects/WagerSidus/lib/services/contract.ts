@@ -215,23 +215,41 @@ export class ContractService {
       const receipt = await tx.wait();
 
       // Get wager ID from event
-      const wagerCreatedEvent = receipt.logs.find((log: any) => {
-        try {
-          const parsed = contract.interface.parseLog(log);
-          return parsed?.name === 'WagerCreated';
-        } catch {
-          return false;
-        }
-      });
+      let wagerId: bigint = BigInt(0);
+      
+      try {
+        // Try to parse WagerCreated event
+        const wagerCreatedEvent = receipt.logs.find((log: any) => {
+          try {
+            const parsed = contract.interface.parseLog(log);
+            return parsed?.name === 'WagerCreated';
+          } catch {
+            return false;
+          }
+        });
 
-      let wagerId: bigint;
-      if (wagerCreatedEvent) {
-        const parsed = contract.interface.parseLog(wagerCreatedEvent);
-        wagerId = parsed?.args[0] || BigInt(0);
-      } else {
-        // Fallback: get the latest wager ID (less reliable)
-        const totalWagers = await this.getTotalWagers();
-        wagerId = totalWagers;
+        if (wagerCreatedEvent) {
+          const parsed = contract.interface.parseLog(wagerCreatedEvent);
+          wagerId = parsed?.args[0] || BigInt(0);
+        }
+        
+        // If event parsing failed or wagerId is 0, try fallback
+        if (wagerId === BigInt(0)) {
+          // Fallback: get the latest wager ID
+          const totalWagers = await this.getTotalWagers();
+          wagerId = totalWagers;
+        }
+      } catch (eventError) {
+        console.warn('Failed to parse WagerCreated event, using fallback:', eventError);
+        // Fallback: get the latest wager ID
+        try {
+          const totalWagers = await this.getTotalWagers();
+          wagerId = totalWagers;
+        } catch (fallbackError) {
+          console.error('Failed to get total wagers:', fallbackError);
+          // Last resort: use transaction hash as identifier
+          throw new Error('Failed to extract wager ID from transaction. Please check the transaction manually.');
+        }
       }
 
       return {
