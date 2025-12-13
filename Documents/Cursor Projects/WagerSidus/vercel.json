@@ -1,0 +1,6 @@
+{
+  "installCommand": "rm -rf node_modules .next && npm install --legacy-peer-deps --no-package-lock --force",
+  "buildCommand": "npm run build",
+  "framework": "nextjs"
+}
+
