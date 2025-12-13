@@ -117,8 +117,17 @@ export default function CreateWagerPage() {
       newErrors.amount = 'Amount must be greater than 0';
     }
 
-    if (parseFloat(amount) > parseFloat(balance)) {
-      newErrors.amount = 'Insufficient balance';
+    // Allow very small amounts (minimum 0.00001 BNB)
+    const minAmount = 0.00001;
+    if (parseFloat(amount) < minAmount) {
+      newErrors.amount = `Minimum wager amount is ${minAmount} BNB`;
+    }
+
+    // Check balance including gas fees (rough estimate: wager + 0.00001 BNB for gas)
+    const estimatedGas = 0.00001; // Conservative estimate
+    const totalRequired = parseFloat(amount) + estimatedGas;
+    if (totalRequired > parseFloat(balance)) {
+      newErrors.amount = `Insufficient balance. Need ${totalRequired.toFixed(6)} BNB (including gas)`;
     }
 
     if (!condition.trim()) {
@@ -234,7 +243,16 @@ You'll be redirected to view your wager...`;
       }, 1500);
     } catch (error: any) {
       console.error('Failed to create wager:', error);
-      showAlert(error.message || 'Failed to create wager. Please try again.');
+      
+      // Check if it's an insufficient funds error
+      const errorMessage = error.message || 'Failed to create wager. Please try again.';
+      
+      if (errorMessage.includes('Insufficient funds') || errorMessage.includes('insufficient funds')) {
+        // Show a more user-friendly message with formatting
+        showAlert(`❌ ${errorMessage}\n\n💡 Tip: Make sure you have enough BNB to cover both the wager amount and gas fees.`);
+      } else {
+        showAlert(`❌ ${errorMessage}`);
+      }
     }
   };
 
@@ -255,7 +273,33 @@ You'll be redirected to view your wager...`;
 
       <div className={styles.balanceInfo}>
         <span>Your Balance: </span>
-        <strong>{parseFloat(balance).toFixed(4)} BNB</strong>
+        <strong>{parseFloat(balance).toFixed(6)} BNB</strong>
+        {amount && parseFloat(amount) > 0 && (
+          <div className={styles.balanceWarning}>
+            {(() => {
+              const wagerAmount = parseFloat(amount);
+              const balanceAmount = parseFloat(balance);
+              // Reserve ~0.00001 BNB for gas fees (very small for tiny wagers)
+              const minRequired = wagerAmount + 0.00001;
+              
+              if (balanceAmount < minRequired) {
+                const shortfall = (minRequired - balanceAmount).toFixed(6);
+                return (
+                  <span className={styles.warning}>
+                    ⚠️ Insufficient funds! You need {shortfall} more BNB (including gas fees)
+                  </span>
+                );
+              } else if (balanceAmount < wagerAmount + 0.00002) {
+                return (
+                  <span className={styles.warning}>
+                    ⚠️ Low balance! Consider leaving some BNB for gas fees
+                  </span>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -303,21 +347,45 @@ You'll be redirected to view your wager...`;
           <input
             id="amount"
             type="number"
-            step="0.001"
-            min="0.001"
+            step="0.00001"
+            min="0.00001"
             value={amount}
             onChange={(e) => {
               setAmount(e.target.value);
               setErrors({ ...errors, amount: '' });
             }}
-            placeholder="0.01"
+            placeholder="0.00001"
             className={errors.amount ? styles.errorInput : ''}
           />
           {errors.amount && <span className={styles.errorText}>{errors.amount}</span>}
-          {amount && parseFloat(amount) > parseFloat(balance) && (
-            <span className={styles.warningText}>
-              ⚠️ Insufficient balance. You need {parseFloat(amount).toFixed(4)} BNB
-            </span>
+          <small className={styles.hintText}>
+            Minimum: 0.00001 BNB (very small amounts allowed!)
+          </small>
+          {amount && parseFloat(amount) > 0 && (
+            <div className={styles.balanceWarning}>
+              {(() => {
+                const wagerAmount = parseFloat(amount);
+                const balanceAmount = parseFloat(balance);
+                // Reserve ~0.00001 BNB for gas fees (very small)
+                const minRequired = wagerAmount + 0.00001;
+                
+                if (balanceAmount < minRequired) {
+                  const shortfall = (minRequired - balanceAmount).toFixed(6);
+                  return (
+                    <span className={styles.warning}>
+                      ⚠️ Insufficient funds! You need {shortfall} more BNB (including gas fees)
+                    </span>
+                  );
+                } else if (balanceAmount < wagerAmount + 0.00002) {
+                  return (
+                    <span className={styles.warning}>
+                      ⚠️ Low balance! Consider leaving some BNB for gas fees
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </div>
           )}
         </div>
 

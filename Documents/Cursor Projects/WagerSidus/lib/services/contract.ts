@@ -139,6 +139,65 @@ export class ContractService {
     }
 
     try {
+      // Check balance before attempting transaction
+      if (!signer.provider) {
+        throw new Error('Provider not available. Please ensure your wallet is connected.');
+      }
+
+      // Store provider in a variable so TypeScript knows it's not null
+      const provider = signer.provider;
+      const address = await signer.getAddress();
+      const balance = await provider.getBalance(address);
+      
+      // Estimate gas for the transaction
+      let estimatedGas: bigint;
+      try {
+        estimatedGas = await contract.createWager.estimateGas(
+          params.participants,
+          amountWei,
+          params.condition,
+          params.charityEnabled || false,
+          params.charityPercentage || 0,
+          params.charityAddress || ethers.ZeroAddress,
+          {
+            value: amountWei,
+          }
+        );
+      } catch (estimateError: any) {
+        // If estimation fails, use a conservative default
+        // For BSC: ~100k-150k gas for simple transactions
+        // Using 150k as safe default
+        estimatedGas = BigInt(150000);
+        console.warn('Gas estimation failed, using default:', estimateError.message);
+      }
+
+      // Get current gas price
+      const feeData = await provider.getFeeData();
+      const gasPrice = feeData.gasPrice || BigInt(0);
+      
+      // Calculate total required: wager amount + gas fees
+      const gasCost = estimatedGas * gasPrice;
+      const totalRequired = amountWei + gasCost;
+
+      // Check if balance is sufficient
+      if (balance < totalRequired) {
+        const balanceBNB = ethers.formatEther(balance);
+        const requiredBNB = ethers.formatEther(totalRequired);
+        const wagerBNB = ethers.formatEther(amountWei);
+        const gasBNB = ethers.formatEther(gasCost);
+        const shortfallBNB = ethers.formatEther(totalRequired - balance);
+        
+        throw new Error(
+          `Insufficient funds!\n\n` +
+          `💰 Your balance: ${parseFloat(balanceBNB).toFixed(6)} BNB\n` +
+          `💸 Required: ${parseFloat(requiredBNB).toFixed(6)} BNB\n` +
+          `   - Wager amount: ${parseFloat(wagerBNB).toFixed(6)} BNB\n` +
+          `   - Gas fees: ~${parseFloat(gasBNB).toFixed(6)} BNB\n` +
+          `❌ Shortfall: ${parseFloat(shortfallBNB).toFixed(6)} BNB\n\n` +
+          `Please add more BNB to your wallet to create this wager.`
+        );
+      }
+
       // Call createWager function
       const tx = await contract.createWager(
         params.participants,

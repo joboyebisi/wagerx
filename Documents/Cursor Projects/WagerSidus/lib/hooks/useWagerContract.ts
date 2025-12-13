@@ -3,6 +3,7 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { useCallback, useState } from 'react';
 import { contractService, CreateWagerParams } from '@/lib/services/contract';
+import { MetaTransactionService, MetaWagerParams } from '@/lib/services/metaTransaction';
 import { ethers } from 'ethers';
 
 export interface TransactionStatus {
@@ -60,14 +61,80 @@ export function useWagerContract(): UseWagerContractReturn {
   }, [user]);
 
   /**
-   * Create a new wager
+   * Create a new wager (gasless by default!)
    */
   const createWager = useCallback(
-    async (params: CreateWagerParams) => {
+    async (params: CreateWagerParams, useGasless: boolean = true) => {
       setIsLoading(true);
       setTransactionStatus({ status: 'pending' });
 
       try {
+        // Try gasless meta-transaction first (default)
+        if (useGasless) {
+          try {
+            const signer = await getSigner();
+            const userAddress = await signer.getAddress();
+            
+            // Get nonce
+            const nonceResponse = await fetch(`/api/wagers/nonce?address=${userAddress}`);
+            const nonceData = await nonceResponse.json();
+            const nonce = nonceData.nonce || 0;
+
+            // Create meta-transaction signature (user signs, no gas!)
+            const contractAddress = process.env.NEXT_PUBLIC_WAGER_CONTRACT_ADDRESS || '';
+            const chainId = parseInt(process.env.NEXT_PUBLIC_BNB_CHAIN_ID || '97');
+            const metaService = new MetaTransactionService(contractAddress, chainId);
+
+            const metaParams: MetaWagerParams = {
+              userAddress,
+              participants: params.participants,
+              amount: params.amount,
+              condition: params.condition,
+              charityEnabled: params.charityEnabled,
+              charityPercentage: params.charityPercentage,
+              charityAddress: params.charityAddress,
+              nonce,
+            };
+
+            const signature = await metaService.createSignature(signer, metaParams);
+
+            // Send to relayer API (relayer pays gas!)
+            const response = await fetch('/api/wagers/meta', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                signature,
+                ...metaParams,
+              }),
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || 'Meta-transaction failed');
+            }
+
+            const result = await response.json();
+
+            setTransactionStatus({
+              status: 'success',
+              txHash: result.txHash,
+            });
+
+            return {
+              txHash: result.txHash,
+              wagerId: BigInt(result.wagerId),
+            };
+          } catch (metaError: any) {
+            // If meta-transaction fails, fall back to regular transaction
+            console.warn('Meta-transaction failed, falling back to regular transaction:', metaError);
+            if (metaError.message?.includes('Relayer not configured')) {
+              throw new Error('Gasless transactions not available. Please use regular transaction.');
+            }
+            // Continue to regular transaction below
+          }
+        }
+
+        // Regular transaction (user pays gas) - fallback
         const signer = await getSigner();
         const result = await contractService.createWager(params, signer);
 

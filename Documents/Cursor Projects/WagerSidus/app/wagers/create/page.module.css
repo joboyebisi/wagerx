@@ -33,6 +33,19 @@
   font-size: 1.1rem;
 }
 
+.balanceWarning {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--tg-theme-hint-color, #ddd);
+}
+
+.balanceWarning .warning {
+  color: #dc3545;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: block;
+}
+
 .form {
   display: flex;
   flex-direction: column;
@@ -81,6 +94,13 @@
 .warningText {
   color: #ff9800;
   font-size: 0.85rem;
+}
+
+.hintText {
+  color: var(--tg-theme-hint-color, #666);
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
 }
 
 .categorySelector {

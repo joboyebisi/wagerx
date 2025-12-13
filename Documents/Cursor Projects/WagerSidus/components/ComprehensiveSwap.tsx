@@ -40,13 +40,13 @@ export default function ComprehensiveSwap() {
     uniswap: {
       name: 'Uniswap',
       description: 'Decentralized exchange for token swaps',
-      supports: ['BSC', 'Ethereum', 'Polygon'],
+      supports: ['BSC', 'Ethereum'],
       fees: '0.3%',
     },
     wormhole: {
       name: 'Wormhole',
       description: 'Cross-chain bridge for multi-chain swaps',
-      supports: ['BSC', 'Ethereum', 'Solana', 'Polygon', 'Avalanche'],
+      supports: ['BSC', 'Ethereum', 'Solana', 'Avalanche'],
       fees: '0.1%',
     },
     'circle-cctp': {
