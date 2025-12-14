@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "next build",
+    "vercel-build": "node -e \"require('next/package.json'); console.log('Next.js found')\" && next build",
     "start": "next start",
     "lint": "next lint",
     "preinstall": "rm -rf node_modules || true",
