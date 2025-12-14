@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "preinstall": "rm -rf node_modules || true",
-    "postinstall": "echo 'Dependencies installed successfully' && node -e \"console.log('Next.js version:', require('./node_modules/next/package.json').version)\" || echo 'Next.js check failed'"
+    "postinstall": "echo 'Dependencies installed successfully'"
   },
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "^1.2.1",
